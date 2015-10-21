@@ -7,6 +7,8 @@ from itertools import combinations
 from ModelUtils.trainModel import getDocIndexScoreInfo, getTrainSet
 from DataMisc.contestParameters import loadTrainLabels
 from sklearn.naive_bayes import GaussianNB
+import numpy as np
+from pprint import pprint
 
 
 def modelTrainPredMethods(modelClass):
@@ -42,12 +44,76 @@ def getAllMeasureCombos(allMeasures, nMeasures):
     return lenMeasureCombos
 
 
-def genTrainTestSet(featureMatrix, labels):
-    trainFeatureMatrix = featureMatrix
-    testFeatureMatrix = featureMatrix
-    trainLabels = labels
-    testLabels = labels
-    return trainFeatureMatrix, trainLabels, testFeatureMatrix, testLabels
+def genCrossValidData(featureMatrix, labels, kfold=5):
+    if labels.ndim < 2:
+        labels = labels[:, np.newaxis]
+
+    labelFeaturesLabels = dict()
+
+    kfoldFeatures = [np.empty([0, featureMatrix.shape[1]], dtype=np.float64) for i in range(kfold)]
+    kfoldLabels = [np.empty([0, labels.shape[1]], dtype=np.float64) for i in range(kfold)]
+    kfoldIndex = [np.empty([0], dtype=np.int) for i in range(kfold)]
+    for l in labelsOrder:
+        index = np.where((labels == l) == True)[0]
+        length = index.shape[0]
+
+        # Generate crossValiIndex
+        # for example, length = 100, kfold = 3, step = 33
+        # in[0]: list(range(0,100,33))
+        # out[0]: [0, 33, 66, 99] # Notice the length is 4
+        # in[1]: crossValiIndex[-1] = length
+        # out[1]: [0, 33, 66, 100] # the last value is the length,
+        # namely all the samples are included in the last set
+        step = length // kfold
+        if kfold == 1:
+            crossValiIndex = [0, length]
+        else:
+            crossValiIndex = list(range(0, length, step))
+            crossValiIndex[-1] = length
+
+        labelFeaturesLabels[l] = {'featureMatrix': featureMatrix[index, :],
+                                  'labels': labels[index, :],
+                                  'length': length,
+                                  'crossValiIndex': crossValiIndex,
+                                  'kfoldIndex': index
+                                  }
+
+        for i, start in enumerate(crossValiIndex[:-1]):
+            lFeatures = labelFeaturesLabels[l]['featureMatrix']
+            lLabels = labelFeaturesLabels[l]['labels']
+            kfoldFeatures[i] = np.concatenate(
+                (kfoldFeatures[i], lFeatures[start:crossValiIndex[i + 1]]),
+                axis=0)
+            kfoldLabels[i] = np.concatenate(
+                (kfoldLabels[i], lLabels[start:crossValiIndex[i + 1]]),
+                axis=0)
+            kfoldIndex[i] = np.concatenate(
+                (kfoldIndex[i], index[start:crossValiIndex[i + 1]]),
+                axis=0)
+
+    crossValidData = {'labelFeaturesLabels': labelFeaturesLabels,
+                      'kfoldFeatures': kfoldFeatures,
+                      'kfoldLabels': kfoldLabels,
+                      'kfoldIndex': kfoldIndex
+                      }
+    return crossValidData
+
+
+def concatKfoldData(crossValidData, i):
+    kfoldFeatures, kfoldLabels, kfoldIndex = \
+        crossValidData['kfoldFeatures'], crossValidData['kfoldLabels'], crossValidData['kfoldIndex']
+    trainFoldIndex = set([i])
+    testFoldIndex = set(range(len(kfoldFeatures))) - trainFoldIndex
+
+    trainFeatureMatrix = kfoldFeatures[i]
+    trainLabels = kfoldLabels[i]
+    trainOriginIndex = kfoldIndex[i]
+    testFeatureMatrix = np.concatenate([kfoldFeatures[j] for j in testFoldIndex], axis=0)
+    testLabels = np.concatenate([kfoldLabels[j] for j in testFoldIndex], axis=0)
+    testOriginIndex = np.concatenate([kfoldIndex[j] for j in testFoldIndex])
+
+    return trainFeatureMatrix, trainLabels, trainOriginIndex, \
+           testFeatureMatrix, testLabels, testOriginIndex
 
 
 def runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass):
@@ -59,14 +125,20 @@ def runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass):
     :param modelClass:
     :return: pred result
     """
+
     modelTrain, modelPred = modelTrainPredMethods(modelClass)
-    modelTrain(trainFeatureMatrix, trainLabels)
+    if trainLabels.ndim == 2:
+        modelTrain(trainFeatureMatrix, trainLabels.ravel())
+    else:
+        modelTrain(trainFeatureMatrix, trainLabels)
     pred = modelPred(testFeatureMatrix)
 
     return pred
 
-if __name__=="__main__":
+
 ##
+if __name__ == "__main__":
+    ##
     allMeasures = getAllMeasures()
     nMeasures = [3, 4, 5]
     lenMeasureCombos = getAllMeasureCombos(allMeasures, nMeasures)
@@ -79,6 +151,7 @@ if __name__=="__main__":
     test_docIndexString_Lemma, test_docIndexLangTrans = pickle.load(pkl_file)
     pkl_file.close()
     rawLabels = loadTrainLabels()
+
     labelsOrder = [1, 0]
     modelClass = GaussianNB
 
@@ -95,14 +168,30 @@ if __name__=="__main__":
 
 ##
 measureCombos = lenMeasureCombos[nMeasures[0]]
+kfold = 1
+
 for measureCombo in measureCombos:
     docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
     featureMatrix, labels = getTrainSet(docIndexScoreInfo, rawLabels)
-    trainFeatureMatrix, trainLabels, \
-    testFeatureMatrix, testLabels = genTrainTestSet(featureMatrix, labels)
-    pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
-    [[tp, fp], [fn, tn]] = confusion_matrix(testLabels, pred, labelsOrder)
+    crossValidData = genCrossValidData(featureMatrix, labels, kfold)
 
+    if kfold == 1:
+        trainFeatureMatrix, trainLabels, kfoldIndex = \
+            crossValidData['kfoldFeatures'][0], crossValidData['kfoldLabels'][0], crossValidData['kfoldIndex']
+        testFeatureMatrix = trainFeatureMatrix
+        pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
+        [[tp, fp], [fn, tn]] = confusion_matrix(trainLabels, pred, labelsOrder)
+    else:
+        for i in range(kfold):
+            trainFeatureMatrix, trainLabels, trainOriginIndex, \
+            testFeatureMatrix, testLabels, testOriginIndex = concatKfoldData(crossValidData, i)
+            pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
+            [[tp, fp], [fn, tn]] = confusion_matrix(testLabels.ravel(), pred, labelsOrder)
+
+
+## conca K fold
 
 
 ##
+# TODO: copy 漏掉的
+# TODO: 法语
