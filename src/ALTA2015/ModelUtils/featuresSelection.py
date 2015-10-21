@@ -1,7 +1,7 @@
 __author__ = 'spacegoing'
 ##
 import pickle
-from ModelUtils.measures import getAllMeasures, getOptMeasureCombo
+from ModelUtils.measures import getAllMeasures, getMeasureCombo, getOptMeasureCombo
 from sklearn.metrics import confusion_matrix
 from itertools import combinations
 from ModelUtils.trainModel import getDocIndexScoreInfo, getTrainSet
@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
                 "2cdSemester 2015/Document Analysis/sharedTask" \
-                "/Code/pycharmVersion/Data/Train/compMeasurements"
+                "/Code/pycharmVersion/Data/Train/compMeasurements_Mapped"
     pkl_file = open(inputpath, 'rb')
     docIndexString_Lemma, docIndexLangTrans, \
     test_docIndexString_Lemma, test_docIndexLangTrans = pickle.load(pkl_file)
@@ -221,13 +221,14 @@ if __name__ == "__main__":
     rawLabels = loadTrainLabels()
     labelsOrder = [1, 0]
     modelClass = GaussianNB
-    kfold = 3
+    kfold = 1
     measureCombos = lenMeasureCombos[nMeasures[0]]
 
     measurenamesDataPerformance = runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
                                                      rawLabels, labelsOrder,
-                                                     modelClass, measureCombos)
-
+                                                     modelClass, [getMeasureCombo()])
+    funcsNames = "__".join([i.__name__ for i in getMeasureCombo()])
+    pprint(measurenamesDataPerformance[funcsNames]['performanceMatrix'])
 ##
 choosePerf = list()
 for m in measurenamesDataPerformance:

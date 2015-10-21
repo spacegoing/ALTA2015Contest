@@ -7,6 +7,7 @@ Created on Mon Sep 28 19:14:47 2015
 ##
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
+from DocUtils.concaTextData import readLabels
 
 
 def getTrainTestData(docIndexLangTrans, docIndexString_Lemma,
@@ -309,6 +310,27 @@ if __name__ == "__main__":
 # for i in labelsIndex:
 #     if i not in filteredIndex:
 #         missingIndex.append(i)
+
+##
+filteredIndex = list()
+for d in test_docIndexString_Lemma:
+    filteredIndex += list(test_docIndexString_Lemma[d].keys())
+
+
+filePath = "/Users/spacegoing/百度云同步盘/macANU/2cdSemester 2015/" \
+           "Document Analysis/sharedTask/Code/pycharmVersion/" \
+           "Data/Test/Baseline.csv"
+testLabels = readLabels(filePath)
+labelsIndex = list()
+for d in testLabels:
+    labelsIndex += list(testLabels[d])
+
+missingIndex = list()
+for i in labelsIndex:
+    if (i not in filteredIndex) and (i not in ['Eval_id', 'Cognates_id']):
+        missingIndex.append(i)
+
+##
 # #
 # # # Need to import original docIndexString
 # inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \

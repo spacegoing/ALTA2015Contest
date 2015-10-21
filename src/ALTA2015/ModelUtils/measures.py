@@ -6,9 +6,9 @@ from sklearn.metrics import confusion_matrix
 
 
 def getMeasureCombo():
-    # return [xxBigramDice, LCSR, commonBigramNumber, basicNED]
+    return [xxBigramDice, commonBigramRatio, LCSR, jaroWinklerDistance]
 
-    return [commonBigramRatio, LCSR, commonLetterRatio, jaroWinklerDistance]
+    # return [xxBigramDice, basicNED, commonBigramRatio, LCSR, jaroWinklerDistance]
 
 def getOptMeasureCombo():
     return [

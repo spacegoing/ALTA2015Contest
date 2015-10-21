@@ -55,6 +55,6 @@ pprint(docIndexPred)
 
 filePath = "/Users/spacegoing/百度云同步盘/macANU/2cdSemester 2015/" \
            "Document Analysis/sharedTask/Code/pycharmVersion/" \
-           "Data/testResult.csv"
+           "Data/testResult4.csv"
 writeLabels(filePath,docIndexPred,trainLabels['column_names'])
 ##

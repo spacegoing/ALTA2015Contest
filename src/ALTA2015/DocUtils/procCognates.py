@@ -1,7 +1,7 @@
 __author__ = 'spacegoing'
 ##
 from nltk.stem import WordNetLemmatizer
-
+from pprint import pprint
 
 # OpenNLP CoreNLP GATE
 
@@ -209,7 +209,6 @@ def mapIndexLangTrans(docIndexLangTrans, mapFREN):
     return docIndexLangTrans
 
 
-    from pprint import pprint
     # eqCharas = [['À', 'à', 'Â', 'â', 'Æ', 'æ', 'Ä', 'ä'],
     #  ['Ç', 'ç'],
     #  ['É', 'é', 'È', 'è', 'Ê', 'ê', 'Ë', 'ë'],

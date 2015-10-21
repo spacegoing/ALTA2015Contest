@@ -13,6 +13,9 @@ def loadTrainData():
     inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
                 "2cdSemester 2015/Document Analysis/sharedTask" \
                 "/Code/pycharmVersion/Data/Train/trainBabelNet"
+    inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
+                "2cdSemester 2015/Document Analysis/sharedTask" \
+                "/Code/pycharmVersion/Data/Train/trainBabelNet_Mapped"
     pkl_file = open(inputpath, 'rb')
     uniqueSynIDBabelNetDict, docIndexLangTrans = pickle.load(pkl_file)
     pkl_file.close()
@@ -32,6 +35,9 @@ def loadTestData():
     inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
                 "2cdSemester 2015/Document Analysis/sharedTask" \
                 "/Code/pycharmVersion/Data/Test/testBabelNetTotall"
+    inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
+                "2cdSemester 2015/Document Analysis/sharedTask" \
+                "/Code/pycharmVersion/Data/Test/testBabelNetTotall_Mapped"
     pkl_file = open(inputpath, 'rb')
     uniqueSynIDBabelNetDict, docIndexLangTrans = pickle.load(pkl_file)
     pkl_file.close()
