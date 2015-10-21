@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
 ##
 measureCombos = lenMeasureCombos[nMeasures[0]]
-kfold = 2
+kfold = 1
 
 for measureCombo in measureCombos:
     docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
