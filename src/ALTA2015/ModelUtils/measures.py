@@ -9,6 +9,42 @@ def getMeasureCombo():
     return [xxBigramDice, LCSR, commonBigramNumber, basicNED]
 
 
+def getOptMeasureCombo():
+    return [
+        xxBigramDice,
+        commonBigramRatio,
+        xBigramDice,
+        bigramDice,
+        jaroDistance,
+        LCSR,
+        basicNED,
+        commonLetterRatio,
+        jaroWinklerDistance
+    ]
+
+
+# array([['commonLetterNumber', 0.65061180946974184],
+#        ['basicMED', 0.67037363115754622],
+#        ['commonTrigramNumber', 0.67411881255772321],
+#        ['LCPRatio', 0.67693417658687827],
+#        ['LCPLength', 0.6782145469949693],
+#        ['commonBigramNumber', 0.6858262373668903],
+#        ['trigramDice', 0.68951917921160788],
+#        ['LCSLength', 0.68975665918814855],
+#        ['commonXBigramRatio', 0.69151983743359324],
+#        ['commonTrigramRatio', 0.70105406583040519],
+#        ['commonXBigramNumber', 0.70412146774222861],
+#        ['xxBigramDice', 0.70994615293373808],
+#        ['commonBigramRatio', 0.71889939566487493],
+#        ['xBigramDice', 0.7196079064797426],
+#        ['bigramDice', 0.72645953953177267],
+#        ['jaroDistance', 0.73590967180997191],
+#        ['LCSR', 0.73673611661591132],
+#        ['basicNED', 0.7406691133528952],
+#        ['commonLetterRatio', 0.74216053979083585],
+#        ['jaroWinklerDistance', 0.74796457127327454]], dtype=object)
+
+
 def getAllMeasures():
     return [basicMED, basicNED, jaroDistance, jaroWinklerDistance,
             LCPLength, LCPRatio, LCSLength, LCSR, bigramDice,

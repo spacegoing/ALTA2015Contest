@@ -1,7 +1,7 @@
 __author__ = 'spacegoing'
 ##
 import pickle
-from ModelUtils.measures import getAllMeasures, getMeasureCombo
+from ModelUtils.measures import getAllMeasures, getOptMeasureCombo
 from sklearn.metrics import confusion_matrix
 from itertools import combinations
 from ModelUtils.trainModel import getDocIndexScoreInfo, getTrainSet
@@ -125,7 +125,6 @@ def compF1Score(tp, fp, fn):
 def runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
                        rawLabels, labelsOrder,
                        modelClass, measureCombos):
-
     measurenamesDataPerformance = dict()
     for measureCombo in measureCombos:
         docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
@@ -133,7 +132,7 @@ def runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
         crossValidData = genCrossValidData(featureMatrix, labels, kfold)
 
         performanceMatrix = list()
-        predOriginlabelsMatrix =list()
+        predOriginlabelsMatrix = list()
         if kfold == 1:
             trainFeatureMatrix, trainLabels, kfoldIndex = \
                 crossValidData['kfoldFeatures'][0], crossValidData['kfoldLabels'][0], crossValidData['kfoldIndex']
@@ -144,7 +143,7 @@ def runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
             performanceMatrix.append([tp, fp, fn, tn, f1])
             predOriginlabelsMatrix.append(
                 {
-                    'pred':pred,
+                    'pred': pred,
                     'originLabels': trainLabels
                 }
             )
@@ -159,7 +158,7 @@ def runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
                 performanceMatrix.append([tp, fp, fn, tn, f1])
                 predOriginlabelsMatrix.append(
                     {
-                        'pred':pred,
+                        'pred': pred,
                         'originLabels': trainLabels
                     }
                 )
@@ -168,7 +167,7 @@ def runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
                                         axis=0) / kfold
                                  )
 
-        if performanceMatrix[-1][-1]>=0.8:
+        if performanceMatrix[-1][-1] >= 0.8:
             print("FaCaiLa: ", measurenames)
 
         measurenames = [i.__name__ for i in measureCombo]
@@ -206,7 +205,8 @@ def runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass):
 ##
 if __name__ == "__main__":
     ##
-    allMeasures = getAllMeasures()
+    # allMeasures = getAllMeasures()
+    allMeasures = getOptMeasureCombo()
     nMeasures = [3, 4, 5]
     lenMeasureCombos = getAllMeasureCombos(allMeasures, nMeasures)
 
@@ -222,14 +222,22 @@ if __name__ == "__main__":
     labelsOrder = [1, 0]
     modelClass = GaussianNB
     kfold = 3
-    measureCombos = lenMeasureCombos[nMeasures[-1]]
+    measureCombos = lenMeasureCombos[nMeasures[0]]
 
     measurenamesDataPerformance = runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
-                           rawLabels, labelsOrder,
-                           modelClass, measureCombos)
+                                                     rawLabels, labelsOrder,
+                                                     modelClass, measureCombos)
 
 ##
-
+choosePerf = list()
+for m in measurenamesDataPerformance:
+    choosePerf.append([m, measurenamesDataPerformance[m]['performanceMatrix'][-1][-1]])
+    print(m)
+    pprint(measurenamesDataPerformance[m]['performanceMatrix'])
+    print("\n")
+choosePerf = np.asarray(choosePerf, dtype=np.object)
+choosePerfSorted = choosePerf[choosePerf[:, 1].argsort()]
+pprint(choosePerfSorted)
 ##
-# TODO: copy 漏掉的
-# TODO: 法语
+# TODO: copy 漏掉的 1. 一定是的
+# TODO: 法语 1. 训练集中没预测出来,但在标签里的

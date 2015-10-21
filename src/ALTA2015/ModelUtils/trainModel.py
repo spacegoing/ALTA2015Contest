@@ -165,6 +165,34 @@ def getGaussianPred(featureMatrix, labels, testSet, testSet_docIndex):
 
     return docIndexPred
 
+def getTrainSetNotPredicted(featureMatrix, labels, trainSet_docIndex):
+    """
+    All input arguments are return of getTrainTestData()
+    :param featureMatrix:
+    :param labels:
+    :param testSet:
+    :param testSet_docIndex:
+    :return docIndexPred: dict{docid: [index1, index2, ...], ...}
+                        key is docid
+                        value is all cognates' index
+    """
+    gnb = GaussianNB()
+    gnb.fit(featureMatrix, labels)
+    # pred = gnb.predict(featureMatrix)
+    pred = gnb.predict(featureMatrix)
+
+    docIndexPred = dict()
+
+    for i, p in enumerate(pred):
+        if p:
+            docid = trainSet_docIndex[i, 0]
+            index = trainSet_docIndex[i, 1]
+            if docid in docIndexPred:
+                docIndexPred[docid].append(index)
+            else:
+                docIndexPred[docid] = [index]
+
+    return docIndexPred
 
 ##
 if __name__ == "__main__":
