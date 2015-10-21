@@ -66,11 +66,8 @@ def genCrossValidData(featureMatrix, labels, kfold=5):
         # out[1]: [0, 33, 66, 100] # the last value is the length,
         # namely all the samples are included in the last set
         step = length // kfold
-        if kfold == 1:
-            crossValiIndex = [0, length]
-        else:
-            crossValiIndex = list(range(0, length, step))
-            crossValiIndex[-1] = length
+        crossValiIndex = list(range(0, length+1, step))
+        crossValiIndex[-1] = length
 
         labelFeaturesLabels[l] = {'featureMatrix': featureMatrix[index, :],
                                   'labels': labels[index, :],
@@ -169,7 +166,7 @@ if __name__ == "__main__":
 
 ##
 measureCombos = lenMeasureCombos[nMeasures[0]]
-kfold = 1
+kfold = 2
 
 for measureCombo in measureCombos:
     docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
