@@ -1,6 +1,8 @@
 __author__ = 'spacegoing'
 ##
 from nltk.stem import WordNetLemmatizer
+
+
 # OpenNLP CoreNLP GATE
 
 def show_didnt_match_result(docFilteredIndexString, docIndexLangTrans):
@@ -15,6 +17,7 @@ def show_didnt_match_result(docFilteredIndexString, docIndexLangTrans):
                 print(v[i[0]] + "\n")
                 print(i[1]["EN"])
 
+
 def show_didnt_match_result_after_lemma(docIndexString_Lemma, docIndexLangTrans):
     for k, v in docIndexString_Lemma.items():
         print("###############################\n")
@@ -23,6 +26,7 @@ def show_didnt_match_result_after_lemma(docIndexString_Lemma, docIndexLangTrans)
             if v[i[0]].lower() not in i[1]["EN"]:
                 print("\n" + v[i[0]])
                 print(i[1]["EN"])
+
 
 def lemmatizeFilteredIndexString(docFilteredIndexString, docIndexLangTrans):
     """
@@ -79,11 +83,11 @@ def lemmatizeFilteredIndexString(docFilteredIndexString, docIndexLangTrans):
                 newOriginTerm = indexStringDict[indexLangTrans[0]]
                 if newOriginTerm not in enTrans:
                     nounterm = wnl.lemmatize(newOriginTerm)
-                    if nounterm in enTrans: # Check if it's Noun
+                    if nounterm in enTrans:  # Check if it's Noun
                         indexStringDict[indexLangTrans[0]] = nounterm
                     else:
                         verbTerm = wnl.lemmatize(newOriginTerm, 'v')
-                        if verbTerm in enTrans: # Check if it's Verb
+                        if verbTerm in enTrans:  # Check if it's Verb
                             indexStringDict[indexLangTrans[0]] = verbTerm
                         else:
 
@@ -114,6 +118,113 @@ def lemmatizeFilteredIndexString(docFilteredIndexString, docIndexLangTrans):
                             print("Finally mapped to: " + fs + "\n")
 
     return docIndexString_Lemma
+
+
+mapFREN = {'À': 'a',
+           'Â': 'a',
+           'Ä': 'a',
+           'Æ': 'a',
+           'Ç': 'c',
+           'È': 'e',
+           'É': 'e',
+           'Ê': 'e',
+           'Ë': 'e',
+           'Î': 'i',
+           'Ï': 'i',
+           'Ô': 'o',
+           'Ö': 'o',
+           'Ù': 'u',
+           'Û': 'u',
+           'Ü': 'u',
+           'à': 'a',
+           'â': 'a',
+           'ä': 'a',
+           'æ': 'a',
+           'ç': 'c',
+           'è': 'e',
+           'é': 'e',
+           'ê': 'e',
+           'ë': 'e',
+           'î': 'i',
+           'ï': 'i',
+           'ô': 'o',
+           'ö': 'o',
+           'ù': 'u',
+           'û': 'u',
+           'ü': 'u',
+           'ÿ': 'y',
+           'Œ': 'o',
+           'œ': 'o',
+           'Ÿ': 'y'}
+
+
+def mapFrenchEnglishCharacters():
+    ##
+
+    import pickle
+    inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
+                "2cdSemester 2015/Document Analysis/sharedTask" \
+                "/Code/pycharmVersion/Data/Train/trainBabelNet"
+    pkl_file = open(inputpath, 'rb')
+    uniqueSynIDBabelNetDict, docIndexLangTrans = pickle.load(pkl_file)
+    pkl_file.close()
+
+    docIndexLangTrans = mapIndexLangTrans(docIndexLangTrans, mapFREN)
+
+    outpath = "/Users/spacegoing/百度云同步盘/macANU/" \
+                "2cdSemester 2015/Document Analysis/sharedTask" \
+                "/Code/pycharmVersion/Data/Train/trainBabelNet_Mapped"
+    pkl_file = open(outpath, 'wb')
+    pickle.dump([uniqueSynIDBabelNetDict, docIndexLangTrans],pkl_file,-1)
+    pkl_file.close()
+
+
+    inputpath = "/Users/spacegoing/百度云同步盘/macANU/" \
+                "2cdSemester 2015/Document Analysis/sharedTask" \
+                "/Code/pycharmVersion/Data/Test/testBabelNetTotall"
+    pkl_file = open(inputpath, 'rb')
+    uniqueSynIDBabelNetDict, test_docIndexLangTrans = pickle.load(pkl_file)
+    pkl_file.close()
+
+    test_docIndexLangTrans = mapIndexLangTrans(test_docIndexLangTrans, mapFREN)
+
+    outpath = "/Users/spacegoing/百度云同步盘/macANU/" \
+                "2cdSemester 2015/Document Analysis/sharedTask" \
+                "/Code/pycharmVersion/Data/Test/testBabelNetTotall_Mapped"
+    pkl_file = open(outpath, 'wb')
+    pickle.dump([uniqueSynIDBabelNetDict, test_docIndexLangTrans],pkl_file,-1)
+    pkl_file.close()
+
+
+    ##
+def mapIndexLangTrans(docIndexLangTrans, mapFREN):
+    for d in docIndexLangTrans:
+        for indexLangTrans in docIndexLangTrans[d]:
+            fr2EN = list()
+            fr = indexLangTrans[1]['FR']
+            if fr:
+                for word in fr:
+                    fr2EN.append("".join([mapFREN.get(w,w) for w in word]))
+            indexLangTrans[1]['FR'] = fr2EN
+    return docIndexLangTrans
+
+
+    from pprint import pprint
+    # eqCharas = [['À', 'à', 'Â', 'â', 'Æ', 'æ', 'Ä', 'ä'],
+    #  ['Ç', 'ç'],
+    #  ['É', 'é', 'È', 'è', 'Ê', 'ê', 'Ë', 'ë'],
+    #  ['Î', 'î', 'Ï', 'ï'],
+    #  ['Ô', 'ô', 'Œ', 'œ', 'Ö', 'ö'],
+    #  ['Ù', 'ù', 'Û', 'û', 'Ü', 'ü'],
+    #  ['Ÿ', 'ÿ']
+    #  ]
+    # enChara = ['a','c','e','i','o','u','y']
+    # mapFREN = dict()
+    # for i,e in enumerate(enChara):
+    #     for f in eqCharas[i]:
+    #         mapFREN[f]=e
+
+    ##
 
 
 ##
