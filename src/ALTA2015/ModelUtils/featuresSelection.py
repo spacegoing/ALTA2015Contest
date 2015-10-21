@@ -49,6 +49,7 @@ def genCrossValidData(featureMatrix, labels, kfold=5):
         labels = labels[:, np.newaxis]
 
     labelFeaturesLabels = dict()
+    labelsOrder = list(np.unique(labels))
 
     kfoldFeatures = [np.empty([0, featureMatrix.shape[1]], dtype=np.float64) for i in range(kfold)]
     kfoldLabels = [np.empty([0, labels.shape[1]], dtype=np.float64) for i in range(kfold)]
