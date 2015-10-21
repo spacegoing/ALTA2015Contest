@@ -165,20 +165,18 @@ def getGaussianPred(featureMatrix, labels, testSet, testSet_docIndex):
 
     return docIndexPred
 
-def getTrainSetNotPredicted(featureMatrix, labels, trainSet_docIndex):
+
+def getTrainSetPredicted(featureMatrix, labels, trainSet_docIndex):
     """
-    All input arguments are return of getTrainTestData()
-    :param featureMatrix:
-    :param labels:
-    :param testSet:
-    :param testSet_docIndex:
-    :return docIndexPred: dict{docid: [index1, index2, ...], ...}
-                        key is docid
-                        value is all cognates' index
+    in labels
+    not in pred
+    indices to docid index
+
+    index to originLemma FR translation
     """
+
     gnb = GaussianNB()
     gnb.fit(featureMatrix, labels)
-    # pred = gnb.predict(featureMatrix)
     pred = gnb.predict(featureMatrix)
 
     docIndexPred = dict()
@@ -192,8 +190,84 @@ def getTrainSetNotPredicted(featureMatrix, labels, trainSet_docIndex):
             else:
                 docIndexPred[docid] = [index]
 
+
     return docIndexPred
 
+
+def getTrainSetWithDocidIndex(docIndexScoreInfo, trainLabels):
+    """
+
+    :param docIndexScoreInfo: return of getDocIndexScoreInfo()
+    :param trainLabels: from contestParameters import loadTrainLabels
+    :return:
+        All returns fits the requirements of sklearn.dataset.iris.data and .target
+        featureMatrix: np.ndarray float 64
+        labels: np.ndarray 1d array float64 contains 0 and 1. 0 for non Cognates. 1 for Cognates.
+    """
+    cognateList = list()
+    nonCognateList = list()
+    trainSet_docIndexY = list()
+    trainSet_docIndexN = list()
+    for d, v in docIndexScoreInfo.items():
+        for index, info in v.items():
+            if info != None:
+                if index in trainLabels[d]:
+                    cognateList.append(info['optimal'].astype(np.float64))
+                    trainSet_docIndexY.append([d, index])
+                else:
+                    nonCognateList.append(info['optimal'].astype(np.float64))
+                    trainSet_docIndexN.append([d, index])
+    featureMatrix = np.asarray(cognateList + nonCognateList)
+    labels = np.asarray([1 for i in range(len(cognateList))] + [0 for i in range(len(nonCognateList))])
+    trainSet_docIndex = np.asarray(trainSet_docIndexY +trainSet_docIndexN, dtype=np.int)
+
+    return featureMatrix, labels, trainSet_docIndex
+
+
+def diffTrainLabelsPredLabels(trainLabels, docIndexPred):
+    docDiff = dict()
+    for d in trainLabels:
+        if d != 'column_names':
+            labels = set(trainLabels[d])
+            preds = set(docIndexPred[d])
+            docDiff[d] = list(labels - preds)
+
+    return docDiff
+
+
+
+def getLemmaTrans(docIndexString_Lemma, docIndexLangTrans, docDiff):
+    lemmaTrans = list()
+    notInTrans = list()
+    for d in docDiff:
+        indexLangTrans = docIndexLangTrans[d]
+        diffList = docDiff[d]
+        indexLemma = docIndexString_Lemma[d]
+        for diff in diffList:
+            if diff in indexLangTrans[:, 0]:
+                index = np.where(docIndexLangTrans[d][:, 0] == diff)[0][0]
+                lemmaTrans.append([d, diff, indexLemma[diff], indexLangTrans[index][1]['FR']])
+            else:
+                notInTrans.append(diff)
+    return lemmaTrans, notInTrans
+
+def getNotInTransMissingClass(docIndexLangTrans, docIndexString_Lemma, trainLabels, measureCombo):
+    docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
+    featureMatrix, labels, trainSet_docIndex = \
+        getTrainSetWithDocidIndex(docIndexScoreInfo, trainLabels)
+    docIndexPred = getTrainSetPredicted(featureMatrix, labels, trainSet_docIndex)
+    docDiff = diffTrainLabelsPredLabels(trainLabels, docIndexPred)
+    lemmaTrans, notInTrans =getLemmaTrans(docIndexString_Lemma, docIndexLangTrans, docDiff)
+    #
+    # import pickle
+    # outputDiffPath = "/Users/spacegoing/百度云同步盘/macANU/" \
+    #       "2cdSemester 2015/Document Analysis/sharedTask" \
+    #       "/Code/pycharmVersion/Data/Train/lemmaTransNotIn.pkl"
+    # output = open(outputDiffPath,"wb")
+    # pickle.dump([lemmaTrans, notInTrans], output, -1)
+    # output.close()
+    return lemmaTrans, notInTrans
+##
 ##
 if __name__ == "__main__":
     ##
