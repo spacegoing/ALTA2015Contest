@@ -1,12 +1,13 @@
 __author__ = 'spacegoing'
 ##
 import pickle
-from ModelUtils.measures import getAllMeasures, getMeasureCombo, comp_F1_Score
+from ModelUtils.measures import getAllMeasures, getMeasureCombo
 from sklearn.metrics import confusion_matrix
 from itertools import combinations
 from ModelUtils.trainModel import getDocIndexScoreInfo, getTrainSet
 from DataMisc.contestParameters import loadTrainLabels
 from sklearn.naive_bayes import GaussianNB
+from random import shuffle
 import numpy as np
 from pprint import pprint
 
@@ -40,6 +41,7 @@ def getAllMeasureCombos(allMeasures, nMeasures):
     for n in nMeasures:
         combis = list(combinations(range(len(allMeasures)), n))
         lenMeasureCombos[n] = [[allMeasures[i] for i in combi] for combi in combis]
+        shuffle(lenMeasureCombos[n])
 
     return lenMeasureCombos
 
@@ -66,7 +68,7 @@ def genCrossValidData(featureMatrix, labels, kfold=5):
         # out[1]: [0, 33, 66, 100] # the last value is the length,
         # namely all the samples are included in the last set
         step = length // kfold
-        crossValiIndex = list(range(0, length+1, step))
+        crossValiIndex = list(range(0, length + 1, step))
         crossValiIndex[-1] = length
 
         labelFeaturesLabels[l] = {'featureMatrix': featureMatrix[index, :],
@@ -114,6 +116,73 @@ def concatKfoldData(crossValidData, i):
            testFeatureMatrix, testLabels, testOriginIndex
 
 
+def compF1Score(tp, fp, fn):
+    p = tp / (tp + fp)
+    r = tp / (tp + fn)
+    return 2 * p * r / (p + r)
+
+
+def runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
+                       rawLabels, labelsOrder,
+                       modelClass, measureCombos):
+
+    measurenamesDataPerformance = dict()
+    for measureCombo in measureCombos:
+        docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
+        featureMatrix, labels = getTrainSet(docIndexScoreInfo, rawLabels)
+        crossValidData = genCrossValidData(featureMatrix, labels, kfold)
+
+        performanceMatrix = list()
+        predOriginlabelsMatrix =list()
+        if kfold == 1:
+            trainFeatureMatrix, trainLabels, kfoldIndex = \
+                crossValidData['kfoldFeatures'][0], crossValidData['kfoldLabels'][0], crossValidData['kfoldIndex']
+            testFeatureMatrix = trainFeatureMatrix
+            pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
+            [[tp, fp], [fn, tn]] = confusion_matrix(trainLabels, pred, labelsOrder)
+            f1 = compF1Score(tp, fp, fn)
+            performanceMatrix.append([tp, fp, fn, tn, f1])
+            predOriginlabelsMatrix.append(
+                {
+                    'pred':pred,
+                    'originLabels': trainLabels
+                }
+            )
+
+        else:
+            for i in range(kfold):
+                trainFeatureMatrix, trainLabels, trainOriginIndex, \
+                testFeatureMatrix, testLabels, testOriginIndex = concatKfoldData(crossValidData, i)
+                pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
+                [[tp, fp], [fn, tn]] = confusion_matrix(testLabels.ravel(), pred, labelsOrder)
+                f1 = compF1Score(tp, fp, fn)
+                performanceMatrix.append([tp, fp, fn, tn, f1])
+                predOriginlabelsMatrix.append(
+                    {
+                        'pred':pred,
+                        'originLabels': trainLabels
+                    }
+                )
+
+        performanceMatrix.append(np.sum(np.asarray(performanceMatrix, dtype=np.float64),
+                                        axis=0) / kfold
+                                 )
+
+        if performanceMatrix[-1][-1]>=0.8:
+            print("FaCaiLa: ", measurenames)
+
+        measurenames = [i.__name__ for i in measureCombo]
+        measurenames = "__".join(measurenames)
+
+        measurenamesDataPerformance[measurenames] = {
+            'crossValidData': crossValidData,
+            'performanceMatrix': performanceMatrix,
+            'predOriginlabelsMatrix': predOriginlabelsMatrix
+        }
+
+    return measurenamesDataPerformance
+
+
 def runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass):
     """
     If use a different modelClass, modelTrainPredMethods(modelClass) may need to be modified.
@@ -148,47 +217,18 @@ if __name__ == "__main__":
     docIndexString_Lemma, docIndexLangTrans, \
     test_docIndexString_Lemma, test_docIndexLangTrans = pickle.load(pkl_file)
     pkl_file.close()
-    rawLabels = loadTrainLabels()
 
+    rawLabels = loadTrainLabels()
     labelsOrder = [1, 0]
     modelClass = GaussianNB
+    kfold = 3
+    measureCombos = lenMeasureCombos[nMeasures[-1]]
 
-# ##
-#
-# selectedCombo = getMeasureCombo()
-# docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, selectedCombo)
-# featureMatrix, labels = getTrainSet(docIndexScoreInfo, rawLabels)
-# trainFeatureMatrix, trainLabels, \
-# testFeatureMatrix, testLabels = genTrainTestSet(featureMatrix, labels)
-# pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
-# f1 = comp_F1_Score(testLabels, pred, labelsOrder)
-#
+    measurenamesDataPerformance = runKfoldValidation(kfold, docIndexLangTrans, docIndexString_Lemma,
+                           rawLabels, labelsOrder,
+                           modelClass, measureCombos)
 
 ##
-measureCombos = lenMeasureCombos[nMeasures[0]]
-kfold = 2
-
-for measureCombo in measureCombos:
-    docIndexScoreInfo = getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo)
-    featureMatrix, labels = getTrainSet(docIndexScoreInfo, rawLabels)
-    crossValidData = genCrossValidData(featureMatrix, labels, kfold)
-
-    if kfold == 1:
-        trainFeatureMatrix, trainLabels, kfoldIndex = \
-            crossValidData['kfoldFeatures'][0], crossValidData['kfoldLabels'][0], crossValidData['kfoldIndex']
-        testFeatureMatrix = trainFeatureMatrix
-        pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
-        [[tp, fp], [fn, tn]] = confusion_matrix(trainLabels, pred, labelsOrder)
-    else:
-        for i in range(kfold):
-            trainFeatureMatrix, trainLabels, trainOriginIndex, \
-            testFeatureMatrix, testLabels, testOriginIndex = concatKfoldData(crossValidData, i)
-            pred = runModel(trainFeatureMatrix, trainLabels, testFeatureMatrix, modelClass)
-            [[tp, fp], [fn, tn]] = confusion_matrix(testLabels.ravel(), pred, labelsOrder)
-
-
-## conca K fold
-
 
 ##
 # TODO: copy 漏掉的

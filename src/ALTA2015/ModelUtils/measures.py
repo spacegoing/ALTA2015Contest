@@ -15,9 +15,8 @@ def getAllMeasures():
             commonBigramNumber, commonBigramRatio, trigramDice,
             commonTrigramNumber, commonTrigramRatio, xBigramDice,
             xxBigramDice, commonXBigramNumber, commonXBigramRatio,
-            commonLetterNumber, commonLetterRatio, longerWordLen,
-            shorterWordLen, averageWordLen, wordLenDifference,
-            wordLenDifferenceRatio]
+            commonLetterNumber, commonLetterRatio
+            ]
 
 
 ### Word Similarity Measures ###

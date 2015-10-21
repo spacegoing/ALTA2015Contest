@@ -36,10 +36,8 @@ def getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo):
 
                             origin: original word (English Lemma).
                             transScores: a list of [french word, score1, score2, ...]
-                            optimal: [max(score1),min(score2),...]
-                                This is the optimal value of all measurements. May be max may be min,
-                                depends on measurements. This behavior need to be changed if use
-                                different measurements.
+                            optimal: use decidePolarity() to decide whether the larger the better or otherwise.
+                                    then return the optimal value.
     """
     docIndexScoreInfo = dict()
     for docid in docIndexLangTrans:
@@ -51,9 +49,7 @@ def getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo):
             if transList:
                 transScores = {'transScores': [[t] + [i(originTerm, t) for i in measureCombo] for t in transList]}
 
-                needMaxMeasures = np.asarray(transScores['transScores'], dtype=np.object)[:, 1:-1]
-                needMinMeasures = np.asarray(transScores['transScores'], dtype=np.object)[:, -1]
-                optimalScores = {'optimal': np.append(np.max(needMaxMeasures, axis=0), np.min(needMinMeasures))}
+                optimalScores = {'optimal': optimPolarity(transScores, measureCombo)}
                 indexMeasures[index] = transScores
                 indexMeasures[index].update(optimalScores)
                 indexMeasures[index].update({'origin': originTerm})
@@ -63,6 +59,37 @@ def getDocIndexScoreInfo(docIndexLangTrans, docIndexString_Lemma, measureCombo):
 
     return docIndexScoreInfo
 
+
+def decidePolarity(measureCombo):
+    measureComboPolarity = list()
+    a = "abcde"
+    b = "jkloiuv"
+    for measure in measureCombo:
+        sameScore = measure(a, a)
+        diffScore = measure(a, b)
+        if sameScore > diffScore:
+            measureComboPolarity.append(1)
+        elif sameScore < diffScore:
+            measureComboPolarity.append(0)
+        else:
+            raise Exception("Measure: ", measure.__name__,
+                            " can't decide polarity. check trainModel.decidePolarity")
+
+    return measureComboPolarity
+
+
+def optimPolarity(transScores, measureCombo):
+    featureMatrix = np.asarray(transScores['transScores'], dtype=np.object)[:, 1:]
+    measureComboPolarity = decidePolarity(measureCombo)
+
+    optimalScores = list()
+    for i, p in enumerate(measureComboPolarity):
+        if p == 1:
+            optimalScores.append(np.max(featureMatrix[:, i]))
+        else:
+            optimalScores.append(np.min(featureMatrix[:, i]))
+
+    return np.asarray(optimalScores, dtype=np.object)
 
 
 def getTrainSet(docIndexScoreInfo, trainLabels):
