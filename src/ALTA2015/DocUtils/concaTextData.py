@@ -8,7 +8,7 @@ Created on Fri Sep 25 18:06:03 2015
 import numpy as np
 import csv
 
-
+####
 def readALTA2015Data(filepath):
     # File Read lines
     with open(filepath) as f:
