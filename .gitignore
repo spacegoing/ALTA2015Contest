@@ -1,0 +1,5 @@
+DATA/
+.py[co]
+__pycache__/
+*~
+.idea/
